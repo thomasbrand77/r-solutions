@@ -1,0 +1,56 @@
+---
+title: "RmdScript1"
+params:
+  basename: NULL
+author: "Thomas Brand"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(rlang)
+library(data.table)
+
+basename = params$basename %||% "myfile"
+```
+
+# setup inputs and outputs
+
+```{r get-inputs}
+inputs = list()
+inputs = append(inputs,
+                paste0("./",basename,".csv"))
+```
+
+```{r get-outputs}
+
+outputs = list()
+outputs = append(outputs,
+                paste0("./",basename,".Rdata"))
+
+```
+
+# do some stuff
+
+## read data
+
+```{r read-data}
+
+dt = fread(inputs[[1]])
+```
+
+## manipulate data
+
+```{r manipulate-data}
+
+dt[, colDate := Sys.Date()]
+
+```
+
+# write output
+
+```{r write-output}
+
+save(dt, file = outputs[[1]])
+```

@@ -1,0 +1,25 @@
+project:
+  type: website
+  output-dir: docs
+
+license: "CC BY-SA"
+
+
+website:
+  title: "r-solutions"
+  navbar:
+    right:
+      - about.qmd
+      - icon: github
+        href: https://github.com/thomasbrand77
+      - icon: linkedin
+        href: https://www.linkedin.com/in/thomas-brand-0b5324186/
+  page-footer: CC-BY-SA-4.0 (2025) Thomas Brand
+        
+format:
+  html:
+    theme: superhero
+    css: styles.css
+
+editor: visual
+
