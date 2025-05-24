@@ -1,0 +1,13 @@
+---
+title: "using overlaps for time-slices"
+author: "Thomas Brand"
+date: "2025-06-01"
+categories: [news, code, data.table]
+draft: true
+---
+
+# Abstract
+
+# Problem definition
+
+# Solution
