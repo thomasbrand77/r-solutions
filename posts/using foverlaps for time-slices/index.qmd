@@ -37,6 +37,42 @@ Our task will be to calculate the cumulative payments per plan for each month fr
 
 # Solution
 
+## Explanation for date intervals
+
+With this date conventions
+
+1.  the startDate is the first date that the row is valid and
+
+2.  the endDate is the first date that the row isn't valid any more,
+
+you can easily calculate the months with the [lubridate](https://lubridate.tidyverse.org)-package and the [interval](https://lubridate.tidyverse.org/reference/interval.html)-function
+
+```{r}
+#| label: date-example
+
+library(lubridate)
+
+# Calculate the months
+interval(start = as.Date("2025-02-01"), end = as.Date("2025-04-01")) %/% months(1)
+```
+
+If we had the convention that the endDate would be the last date where the row is still valid the calulations wouldn't add up.
+
+```{r}
+#| label: date-example-unfortunate
+
+# Calculate the months
+interval(start = as.Date("2025-02-01"), end = as.Date("2025-03-31")) %/% months(1)
+```
+
+## Introduction of foverlaps
+
+::: callout-note
+For a detailed explanation of what you can do with the data.table-package please see
+
+Barrett T, Dowle M, Srinivasan A, Gorecki J, Chirico M, Hocking T, Schwendinger B, Krylov I (2025). *data.table: Extension of 'data.frame'*. R package version 1.17.99, [https://r-datatable.com](https://r-datatable.com/).
+:::
+
 First, we will generate a data.table with two columns for the begin and the end of an interval. This can be done with the following code.
 
 ```{r}

@@ -228,14 +228,70 @@ Note
 </section>
 <section id="solution" class="level1">
 <h1>Solution</h1>
+<section id="explanation-for-date-intervals" class="level2">
+<h2 class="anchored" data-anchor-id="explanation-for-date-intervals">Explanation for date intervals</h2>
+<p>With this date conventions</p>
+<ol type="1">
+<li><p>the startDate is the first date that the row is valid and</p></li>
+<li><p>the endDate is the first date that the row isn’t valid any more,</p></li>
+</ol>
+<p>you can easily calculate the months with the <a href="https://lubridate.tidyverse.org">lubridate</a>-package and the <a href="https://lubridate.tidyverse.org/reference/interval.html">interval</a>-function</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>
+Attaching package: 'lubridate'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:data.table':
+
+    hour, isoweek, mday, minute, month, quarter, second, wday, week,
+    yday, year</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>The following objects are masked from 'package:base':
+
+    date, intersect, setdiff, union</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate the months</span></span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">interval</span>(<span class="at">start =</span> <span class="fu">as.Date</span>(<span class="st">"2025-02-01"</span>), <span class="at">end =</span> <span class="fu">as.Date</span>(<span class="st">"2025-04-01"</span>)) <span class="sc">%/%</span> <span class="fu">months</span>(<span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 2</code></pre>
+</div>
+</div>
+<p>If we had the convention that the endDate would be the last date where the row is still valid the calulations wouldn’t add up.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate the months</span></span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a><span class="fu">interval</span>(<span class="at">start =</span> <span class="fu">as.Date</span>(<span class="st">"2025-02-01"</span>), <span class="at">end =</span> <span class="fu">as.Date</span>(<span class="st">"2025-03-31"</span>)) <span class="sc">%/%</span> <span class="fu">months</span>(<span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stdout">
+<pre><code>[1] 1</code></pre>
+</div>
+</div>
+</section>
+<section id="introduction-of-foverlaps" class="level2">
+<h2 class="anchored" data-anchor-id="introduction-of-foverlaps">Introduction of foverlaps</h2>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>For a detailed explanation of what you can do with the data.table-package please see</p>
+<p>Barrett T, Dowle M, Srinivasan A, Gorecki J, Chirico M, Hocking T, Schwendinger B, Krylov I (2025).&nbsp;<em>data.table: Extension of ‘data.frame’</em>. R package version 1.17.99,&nbsp;<a href="https://r-datatable.com/">https://r-datatable.com</a>.</p>
+</div>
+</div>
 <p>First, we will generate a data.table with two columns for the begin and the end of an interval. This can be done with the following code.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>intervals <span class="ot">=</span> <span class="fu">data.table</span>(<span class="at">startDate =</span> <span class="fu">seq</span>(<span class="fu">as.Date</span>(<span class="st">"2024-09-01"</span>), <span class="at">to =</span> <span class="fu">as.Date</span>(<span class="st">"2025-06-01"</span>), <span class="at">by =</span> <span class="st">"month"</span>))</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>intervals[,endDate <span class="sc">:</span><span class="er">=</span> <span class="fu">shift</span>(startDate, <span class="at">type =</span> <span class="st">"lead"</span>)]</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>intervals <span class="ot">=</span> <span class="fu">na.omit</span>(intervals)</span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"startDate"</span>,<span class="st">"endDate"</span>)</span>
-<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a><span class="fu">setkeyv</span>(intervals, cols)</span>
-<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>intervals</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>intervals <span class="ot">=</span> <span class="fu">data.table</span>(<span class="at">startDate =</span> <span class="fu">seq</span>(<span class="fu">as.Date</span>(<span class="st">"2024-09-01"</span>), <span class="at">to =</span> <span class="fu">as.Date</span>(<span class="st">"2025-06-01"</span>), <span class="at">by =</span> <span class="st">"month"</span>))</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>intervals[,endDate <span class="sc">:</span><span class="er">=</span> <span class="fu">shift</span>(startDate, <span class="at">type =</span> <span class="st">"lead"</span>)]</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>intervals <span class="ot">=</span> <span class="fu">na.omit</span>(intervals)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"startDate"</span>,<span class="st">"endDate"</span>)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a><span class="fu">setkeyv</span>(intervals, cols)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>intervals</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>Key: &lt;startDate, endDate&gt;
     startDate    endDate
@@ -253,8 +309,8 @@ Note
 </div>
 <p>Next we will start a first try to sse what foverlaps will produce.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a>result <span class="ot">=</span> <span class="fu">foverlaps</span>(dt, intervals, <span class="at">by.x =</span> cols, <span class="at">by.y =</span> cols)</span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>result <span class="ot">=</span> <span class="fu">foverlaps</span>(dt, intervals, <span class="at">by.x =</span> cols, <span class="at">by.y =</span> cols)</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(result)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output-display">
 <table class="caption-top table table-sm table-striped small">
 <colgroup>
@@ -553,7 +609,7 @@ Note
 <p>We are almost there.</p>
 <p>But if we look closer we see that there are some wrong lines</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>result[<span class="fu">c</span>(<span class="dv">15</span>,<span class="dv">16</span>,<span class="dv">24</span>)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>result[<span class="fu">c</span>(<span class="dv">15</span>,<span class="dv">16</span>,<span class="dv">24</span>)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>    startDate    endDate client   plan i.startDate  i.endDate basicPrice
        &lt;Date&gt;     &lt;Date&gt; &lt;char&gt; &lt;char&gt;      &lt;Date&gt;     &lt;Date&gt;      &lt;num&gt;
@@ -570,6 +626,7 @@ Note
 <p>Comparing startDate and endDate with i.startDate an i.endDate we can see the foverlaps generated one line for the month, but that the current intervals ended the month before or didn’t even have started.</p>
 
 
+</section>
 </section>
 
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" id="quarto-reuse"><h2 class="anchored quarto-appendix-heading">Reuse</h2><div class="quarto-appendix-contents"><div><a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a></div></div></section></div></main> <!-- /main -->
