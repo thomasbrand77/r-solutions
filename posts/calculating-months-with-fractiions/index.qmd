@@ -1,0 +1,91 @@
+---
+title: "calculating months with fractions"
+author: "Thomas Brand"
+date: "2025-06-08"
+categories: [news, code, lubridate]
+draft: true
+---
+
+# Abstract
+
+# Problem definition
+
+In many cases you have the situation, that you bill a customer on a per month basis, e.g. in a subscription for a service. So any record (i.e. row) has a
+
+-   `startDate`\` which is the first day, that a row is valid and an
+
+-   `endDate`\` which is the first day, that a row isn't valid any more.
+
+With this in mind you can easily calculate the months between two dates as the difference between the months of your dates if you substract them.
+
+```{r}
+#| label: easy-month-calculation
+#| message: false
+
+library(data.table)
+library(lubridate)
+
+start = as.Date("2025-01-01")
+end = as.Date("2025-03-01")
+
+months_between = month(end) - month(start)
+months_between
+```
+
+In this case it doesn't matter how many days the month has, i.e. February with its 28/29 days count as equally as one month as does March with its 31 days.
+
+Apart for the obvious problems with year-changes in this calculation-approach, we will also have to deal with beginnings or endings within a month. This could be because someone started the subscription not on the first of a month or terminated the service before the end of the month, e.g. by right of premature cancellation or just because the person died.
+
+In this cases you cant bill the customer for the whole month, just for the days he used the service. By definition we will assume that for $x$ days of service we can bill the customer with $\frac{x}{dsom}$ of the monthly payment, with $dsom$ the number of days of the corresponding month.
+
+So, let's look at several different situations of possible scenarios for calculating the **month-with-fractions**.
+
+```{r}
+#| label: construct-data-table
+
+dt = rowwiseDT(start=, end=, expected=,
+               "2025-01-01","2025-02-01", 1.0,       # 1 month
+               "2024-11-01","2025-02-01", 3.0,       # 3 months
+               "2025-01-01","2025-02-10", 1 + 9/28,  # 1 month and 9 days of February
+               "2025-01-15","2025-03-01", 1 + 14/28, # 1 month and 14 days of February
+               "2025-01-15","2025-03-10", 1 + 16/31 + 9/31,  # 1 month and 16 + 9 = 25 days
+               "2025-01-15","2025-01-15", 0,         # 0 months
+               "2025-01-15","2025-01-16", 1/31       # 0 months an 1 day of a 
+               )
+dt
+```
+
+::: callout-note
+To construct the data.table we used the [rowiseDT](https://rdatatable.gitlab.io/data.table/reference/rowwiseDT.html)-function of data.table which was inspired by the [tribble](https://tibble.tidyverse.org/reference/tribble.html)-function of the [tibble](https://tibble.tidyverse.org/index.html)-package.
+:::
+
+# Solution
+
+To calculate the months we can use the following functions from the [lubridate](https://lubridate.tidyverse.org)-package
+
+-   [interval](https://lubridate.tidyverse.org/reference/interval.html) to define a date-interval and
+
+-   [time_length](https://lubridate.tidyverse.org/reference/time_length.html) to calculate the monts.
+
+Let's see how this works. First we build the intervals
+
+```{r}
+#| label: intervals
+
+dt[,interval := interval(start, end)]
+dt
+```
+
+::: callout-note
+As you can see, we didn't even have to convert the character-dates into actual dates. The interval-function did all this for us.
+:::
+
+Then we calculate the monts
+
+```{r}
+#| label: calculate-months-from-intervals
+
+dt[,months := time_length(interval,
+                          unit = "month")]
+dt
+```
