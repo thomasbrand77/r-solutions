@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/calculating-months-with-fractiions/index.html",
       "/posts/makepipe-and-rmarkdown/index.html"
     ]
   }
