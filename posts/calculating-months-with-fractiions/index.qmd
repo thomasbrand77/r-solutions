@@ -1,14 +1,14 @@
 ---
-title: "calculating months with fractions"
+title: "Calculating months with fractions"
 author: "Thomas Brand"
-date: "2025-06-08"
+date: "2025-06-09"
 categories: [news, code, lubridate, data.table, rowiseDT, interval, time_length]
 draft: false
 ---
 
 # Abstract
 
-In this blog I will show you how you can calculate the number of months between two dates with the lubridate-package. This is quite an easy task, but you have to take into account certain special cases in which you might get a result, that is not quite what you would expect. I will also give you an solution of how you ca avoid this problem.
+In this blog I will show you how you can calculate the number of months between two dates with the lubridate-package. This is quite an easy task, but you have to take into account certain special cases in which you might get a result, that is not quite what you would expect. I will also give you an solution of how you can avoid this problem.
 
 # Problem definition
 
@@ -18,7 +18,7 @@ In many cases you have the situation, that you bill a customer on a per month ba
 
 -   `endDate` which is the first day, that a row isn't valid any more.
 
-With this in mind you can easily calculate the months between two dates as the difference between the months of your dates if you substract them.
+With this in mind you can easily calculate the months between two dates as the difference between the months of your dates if you subtract them.
 
 ```{r}
 #| label: easy-month-calculation
@@ -34,7 +34,7 @@ months_between = month(end) - month(start)
 months_between
 ```
 
-In this case it doesn't matter how many days the month has, i.e. February with its 28/29 days count as equally as one month as does March with its 31 days.
+In this case it doesn't matter how many days the month has, i.e. February with its 28 (29) days count as equally as one month as does March with its 31 days.
 
 Apart for the obvious problems with year-changes in this calculation-approach, we will also have to deal with beginnings or endings within a month. This could be because someone started the subscription not on the first of a month or terminated the service before the end of the month, e.g. by right of premature cancellation or just because the person died.
 
@@ -45,16 +45,16 @@ So, let's look at several different situations of possible scenarios for calcula
 ```{r}
 #| label: construct-data-table
 
-dt = rowwiseDT(start=, end=, expected=,
-               "2025-01-01","2025-02-01", 1.0,       # 1 month
-               "2024-11-01","2025-02-01", 3.0,       # 3 months
-               "2025-01-01","2025-02-10", 1 + 9/28,  # 1 month and 9 days of February
-               "2025-01-15","2025-02-01", 17/31,     # 17 days
-               "2025-02-01","2025-03-10", 1 + 9/31,  # 1 month an 9 days of March
-               "2025-01-15","2025-03-01", 1 + 14/28, # 1 month and 14 days of February
-               "2025-01-15","2025-03-10", 1 + 23/28,  # 1 month and 14 + 9 = 25 days
-               "2025-01-15","2025-01-15", 0,         # 0 months
-               "2025-01-15","2025-01-16", 1/31       # 0 months an 1 day of a 
+dt = rowwiseDT(start=, end=, expected=, descr=,
+               "2025-01-01","2025-02-01", 1.0,       "1 month",
+               "2024-11-01","2025-02-01", 3.0,       "3 months",
+               "2025-01-01","2025-02-10", 1 + 9/28,  "1 month and 9 days of February",
+               "2025-01-15","2025-02-01", 17/31,     "17 days",
+               "2025-02-01","2025-03-10", 1 + 9/31,  "1 month an 9 days of March",
+               "2025-01-15","2025-03-01", 1 + 14/28, "1 month and 14 days of February",
+               "2025-01-15","2025-03-10", 1 + 23/28, "1 month and 14 + 9 = 25 days",
+               "2025-01-15","2025-01-15", 0,         "0 months",
+               "2025-01-15","2025-01-16", 1/31,       "0 months an 1 day of January"
                )
 dt
 ```
@@ -62,6 +62,25 @@ dt
 ::: callout-note
 To construct the data.table we used the [rowiseDT](https://rdatatable.gitlab.io/data.table/reference/rowwiseDT.html)-function of data.table which was inspired by the [tribble](https://tibble.tidyverse.org/reference/tribble.html)-function of the [tibble](https://tibble.tidyverse.org/index.html)-package.
 :::
+
+```{r}
+#| label: grafic
+#| echo: false
+
+library(ggplot2)
+
+dt2 = copy(dt)
+dt2[,':='(start = as.Date(start),
+          end = as.Date(end))]
+
+ggplot(dt2, aes(x = start, xend = end, y = descr, yend = descr, color = descr)) +
+  geom_segment(linewidth = 4) +
+  labs(title = "time-intervals", x = "Date", y = "different cases") +
+  theme_minimal() +
+  theme(legend.position = "none",)
+  
+
+```
 
 # Solution
 
