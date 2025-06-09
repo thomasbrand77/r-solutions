@@ -20,6 +20,8 @@ As an indication of time-slice without end (i.e. the end isn't known by now) you
 It is as well useful for joining operations and calulations, that the endDate corresponds to the first Date where the slice isn't valid any more. In this way you can stitch together the slices of a person by the corresponding startDate to an endDate.
 :::
 
+In mathematical terms we have an interval, that is closed at the left and open at the right: $[a, b)$.
+
 Let's look at some example-data.
 
 ```{r}
@@ -84,7 +86,7 @@ setkeyv(intervals, cols)
 intervals
 ```
 
-Next we will start a first try to sse what foverlaps will produce.
+Next we will start a first try to see what foverlaps will produce.
 
 ```{r}
 result = foverlaps(dt, intervals, by.x = cols, by.y = cols)
@@ -96,7 +98,44 @@ We are almost there.
 But if we look closer we see that there are some wrong lines
 
 ```{r}
-result[c(15,16,24)]
+result[c(10,15,16,24)]
 ```
 
 Comparing startDate and endDate with i.startDate an i.endDate we can see the foverlaps generated one line for the month, but that the current intervals ended the month before or didn't even have started.
+
+::: callout-important
+The reason for this is, we have defined our intervals as open on the right.
+
+By default the foverlaps-function used an overlap-mode "any" which will produce an overlap of two intervals $[a,b]$ and $[c,d]$ if $c\le b \wedge c\ge d$ . So all intervals are treated as closed intervals.
+
+Unfortunately the other available types of overlaps in foverlaps don't fit our requirements:
+
+-   "within" - the interval has to lie within the other to overlap
+
+-   "start" - the start-dates have to be equal to overlap
+
+-   "end" - the end-dates have to be equal to overlap
+
+-   "equal" - the intervals have to be identical to overlap
+:::
+
+## Transforming the intervals
+
+Therefore we have to change our intervals from open on the right side to closed on the right side. We can do this by subtracting one day from the end. We will create a new Column `endDatem1` in our `dt`- and our `intervals`-tables.
+
+```{r}
+dt[,endDatem1 := endDate - days(1)]
+intervals[,endDatem1 := endDate - days(1)]
+colsm1 = c("startDate","endDatem1")
+setkeyv(intervals, colsm1)
+```
+
+Lets try foverlaps again with `startDate` and `endDatem1`.
+
+```{r}
+result_m1 = foverlaps(dt, intervals, by.x = colsm1, by.y = colsm1)
+col_selected = c("startDate","endDate","client","plan","i.startDate","i.endDate","basicPrice","discount","toPayPerMonth")
+knitr::kable(result_m1[,..col_selected])
+```
+
+For clarity we have omitted the m1-suffix columns in the output. As we can see we the results are correct now. The incorrect lines have vanished.
