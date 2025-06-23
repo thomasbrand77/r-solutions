@@ -1,7 +1,7 @@
 ---
 title: "using overlaps for time-slices"
 author: "Thomas Brand"
-date: "2025-06-01"
+date: "2025-06-23"
 categories: [news, code, data.table]
 draft: true
 ---
@@ -25,12 +25,11 @@ In mathematical terms we have an interval, that is closed at the left and open a
 Let's look at some example-data.
 
 ```{r}
-#| echo: FALSE
 #| label: example-data
 
 library(data.table)
 load("./client_data.Rdata")
-dt
+knitr::kable(dt)
 ```
 
 This is of course a simplified example.
@@ -75,9 +74,11 @@ For a detailed explanation of what you can do with the data.table-package please
 Barrett T, Dowle M, Srinivasan A, Gorecki J, Chirico M, Hocking T, Schwendinger B, Krylov I (2025). *data.table: Extension of 'data.frame'*. R package version 1.17.99, [https://r-datatable.com](https://r-datatable.com/).
 :::
 
-First, we will generate a data.table with two columns for the begin and the end of an interval. This can be done with the following code.
+First, we will generate a data.table with two columns for the begin and the end of an interval. Each row will cover exactly one month. This can be done with the following code.
 
 ```{r}
+#| label: definition-of-intervals
+
 intervals = data.table(startDate = seq(as.Date("2024-09-01"), to = as.Date("2025-06-01"), by = "month"))
 intervals[,endDate := shift(startDate, type = "lead")]
 intervals = na.omit(intervals)
@@ -89,6 +90,8 @@ intervals
 Next we will start a first try to see what foverlaps will produce.
 
 ```{r}
+#| label: first-draft-of-fintervals
+
 result = foverlaps(dt, intervals, by.x = cols, by.y = cols)
 knitr::kable(result)
 ```
@@ -98,15 +101,17 @@ We are almost there.
 But if we look closer we see that there are some wrong lines
 
 ```{r}
+#| label: errors-of-first-draft
+
 result[c(10,15,16,24)]
 ```
 
-Comparing startDate and endDate with i.startDate an i.endDate we can see the foverlaps generated one line for the month, but that the current intervals ended the month before or didn't even have started.
+Comparing startDate and endDate with i.startDate and i.endDate we can see the foverlaps generated a line for the month, but that the current intervals ended the month before or didn't even have started.
 
 ::: callout-important
-The reason for this is, we have defined our intervals as open on the right.
+The reason for this is, that we have defined our intervals as open on the right.
 
-By default the foverlaps-function used an overlap-mode "any" which will produce an overlap of two intervals $[a,b]$ and $[c,d]$ if $c\le b \wedge c\ge d$ . So all intervals are treated as closed intervals.
+By default the foverlaps-function used an overlap-mode "any" which will produce an overlap of two intervals $[a,b]$ and $[c,d]$ if $c\le b \wedge d\ge a$ . So all intervals are treated as closed intervals.
 
 Unfortunately the other available types of overlaps in foverlaps don't fit our requirements:
 
@@ -121,9 +126,11 @@ Unfortunately the other available types of overlaps in foverlaps don't fit our r
 
 ## Transforming the intervals
 
-Therefore we have to change our intervals from open on the right side to closed on the right side. We can do this by subtracting one day from the end. We will create a new Column `endDatem1` in our `dt`- and our `intervals`-tables.
+Therefore we have to change our intervals from open on the right side to closed on the right side. We can do this by subtracting one day from the end. We will create a new column `endDatem1` in our `dt`- and our `intervals`-tables.
 
 ```{r}
+#| label: transform-of-intervals
+
 dt[,endDatem1 := endDate - days(1)]
 intervals[,endDatem1 := endDate - days(1)]
 colsm1 = c("startDate","endDatem1")
@@ -133,9 +140,62 @@ setkeyv(intervals, colsm1)
 Lets try foverlaps again with `startDate` and `endDatem1`.
 
 ```{r}
+#| label: calculation-of-results
+
 result_m1 = foverlaps(dt, intervals, by.x = colsm1, by.y = colsm1)
 col_selected = c("startDate","endDate","client","plan","i.startDate","i.endDate","basicPrice","discount","toPayPerMonth")
 knitr::kable(result_m1[,..col_selected])
 ```
 
-For clarity we have omitted the m1-suffix columns in the output. As we can see we the results are correct now. The incorrect lines have vanished.
+For clarity we have omitted the m1-suffix columns in the output. As we can see the results are correct now. The incorrect lines have vanished.
+
+## Solutions for special forms of intervals
+
+The solution above works as long as you are dealing with real intervals $[a,b)$ where $a<b$ .
+
+Sometimes, however, you can have the situation, that you have records that are only valid "a logical second", meaning that you documented some changes in your records, but these changes didn't lead to a real time span. In this case you have intervals where $a=b$.
+
+```{r}
+#| label: special-slices
+
+dt_special = data.table(startDate = as.Date(c("2025-01-01","2025-02-01","2025-02-01")),
+                        endDate = as.Date(c("2025-02-01","2025-02-01","9999-12-31")),
+                        name = c("Doe","Smith","Smith"),
+                        toPayPerMonth = c(1.23,1.23,2.34))
+
+dt_special[,endDatem1 := endDate - days(1)]
+knitr::kable(dt_special)
+```
+
+Lets see how foverlaps handles these situations:
+
+```{r}
+#| label: first-try-special-interval
+#| error: TRUE
+
+result_sp1 = foverlaps(dt_special, intervals, by.x = colsm1, by.y = colsm1) 
+```
+
+As you can see the foverlaps-function returns an error-message.
+
+### Omit these rows if possible
+
+In our use-case or this blog the easiest solution would be eliminate these rows from our dataset, as we are only interested in the amount someone hase to pay which is time/date multiplied by the sum to pay per month. Lets see how we can do this
+
+```{r}
+
+result_sp2 = foverlaps(dt_special[startDate <= endDatem1], intervals, by.x = colsm1, by.y = colsm1)
+knitr::kable(result_sp2[,.(startDate,endDate,name,toPayPerMonth)])
+```
+
+It works, but we loose the information, that the name-change didn't cause a change of the payment per month.
+
+### manipulate the start columns as well
+
+If on the other hand we are interested in conserving the information that the name-change happened without change of payment per month.
+
+```{r}
+dt_special[startDate == endDate, startDate := startDate - days(1)]
+result_sp3 = foverlaps(dt_special, intervals, by.x = colsm1, by.y = colsm1)
+result_sp3[startDate == endDatem1, startDate := endDate]
+```
