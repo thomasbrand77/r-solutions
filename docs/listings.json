@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/using-foverlaps-for-time-slices/index.html",
       "/posts/calculating-months-with-fractiions/index.html",
       "/posts/makepipe-and-rmarkdown/index.html"
     ]
