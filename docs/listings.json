@@ -1,0 +1,12 @@
+[
+  {
+    "listing": "/index.html",
+    "items": [
+      "/posts/alternatives-for-read.fwf/index.html",
+      "/posts/using-fread-for-reading-csv/index.html",
+      "/posts/using-foverlaps-for-time-slices/index.html",
+      "/posts/calculating-months-with-fractiions/index.html",
+      "/posts/makepipe-and-rmarkdown/index.html"
+    ]
+  }
+]

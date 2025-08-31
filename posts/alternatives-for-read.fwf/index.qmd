@@ -1,0 +1,279 @@
+---
+title: "alternatives for read.fwf"
+author: "Thomas Brand"
+date: "2025-08-31"
+categories: [news, code, data.table, LaF, readr, fread, laf_open_fwf, read_fwf, read.fwf]
+draft: false
+---
+
+# Abstract
+
+In this post I will show you some alternatives for the [read.fwf](https://www.rdocumentation.org/packages/utils/versions/3.6.2/topics/read.fwf)-function for reading fixed width files, that are considerably faster than read.fwf. The solutions we will look at are:
+
+-   [fread](https://rdatatable.gitlab.io/data.table/reference/fread.html) with preprocessing
+
+-   fread in combination with LaF::[laf_open_fwf](https://cran.r-project.org/web/packages/LaF/refman/LaF.html#laf_open_fwf) and tidyr::[unite](https://tidyr.tidyverse.org/reference/unite.html)
+
+-   [read_fwf](https://readr.tidyverse.org/reference/read_fwf.html) from [readr](https://readr.tidyverse.org/index.html)
+
+Each of these alternatives will give you enormous speed advantages over read.fwf.
+
+# Problem definition
+
+## Timing read.fwf
+
+The thing is, that read.fwf is quite slow and in no way compareable to the speed of fread.
+
+Let's look at a reproducible example.
+
+```{r}
+library(data.table)
+library(nycflights23)
+library(stringr)
+
+# the flights-table of nycflights23
+fl = as.data.table(flights)
+
+# make all columns character with width of 6
+fl1 = lapply(fl,str_pad, width = 6L)
+setDT(fl1)
+for (i in names(fl1)) {
+  fl1[is.na(col), col := "      ",
+      env = list(col = i)]
+}
+
+# write a fixed width-file
+write.table(fl1,
+            file = "~/flights.fwf",
+            sep = "",
+            row.names = FALSE,
+            col.names = FALSE,
+            quote = FALSE)
+
+# write a csv-file
+fwrite(fl1,
+       file = "~/flights.csv",
+       quote = FALSE,
+       col.names = FALSE)
+
+time_fwf = system.time({rfl_fwf = read.fwf("~/flights.fwf",
+                                           width = c(rep(6L, times = 18),19L))})
+
+time_csv = system.time({rfl_csv = fread("~/flights.csv",
+                                        header = FALSE)})
+```
+
+The execution times are quite amazing
+
+```{r}
+f = round(time_fwf["elapsed"] / time_csv["elapsed"],0)
+time_fwf
+time_csv
+```
+
+which means, that read.fwf was slower by a factor of `r f`. So it really pays to find a solution for this.
+
+By the way: fread was even better at recognizing the type of datetime-variables
+
+```{r}
+head(rfl_fwf, n = 1L)
+```
+
+```{r}
+class(rfl_fwf$V19)
+```
+
+```{r}
+head(rfl_csv, n= 1L)
+```
+
+```{r}
+class(rfl_csv$V19)
+```
+
+# Solution
+
+If the obvious solution (avoid fwf-files or ask your IT-guys to put in commas between columns) isn't an option for you, we have to find a way of reading the files with fixed width.
+
+## fread with preprocessing
+
+The [fread-function](https://rdatatable.gitlab.io/data.table/reference/fread.html) of the {data.table} package has the ability to do some preprocessing via the cmd-option.
+
+::: callout-note
+For a detailed explanation of what you can do with the data.table-package please see
+
+Barrett T, Dowle M, Srinivasan A, Gorecki J, Chirico M, Hocking T, Schwendinger B, Krylov I (2025). *data.table: Extension of 'data.frame'*. R package version 1.17.99, [https://r-datatable.com](https://r-datatable.com/).
+:::
+
+We can thus make use of the [awk-command](https://www.gnu.org/software/gawk/manual/gawk.html) of our Operating System. The detailed options for this command may depend on your operating system. We use the MacOS-Version here.
+
+Let's construct such a command
+
+```{r}
+# where to find the file
+fpath = "~/flights.fwf"
+
+# the width of the fields
+width = c(rep(6L, times = 18),19L)
+
+# calculating starting and ending positions
+starting_pos = cumsum(c(1,width))
+
+com = paste0(
+  "awk '{ print ",
+  paste(
+    paste0("substr($0,",starting_pos[1:length(width)],",",width,")"),
+    collapse = "\",\""
+  ),
+  " }' ",
+  fpath
+)
+
+com
+```
+
+With this command we will now call fread
+
+```{r}
+rfl_fread_fwf = fread(cmd = com,
+                      sep = ",")
+```
+
+::: callout-note
+We were using the awk-command here. This is because of the MasOS I'm using. In another OS you can use the [cut-command](https://wiki.ubuntuusers.de/cut/) with the –output-delimiter option. So you would have something like
+
+```{r}
+# the width of the fields
+width = c(rep(6L, times = 18),19L)
+
+# calculating starting and ending positions
+starting_pos = cumsum(c(1,width))
+ending_pos = cumsum(width)
+
+limits = paste(paste(starting_pos[1:length(width)],ending_pos,sep = "-"), collapse = ",")
+
+com2 = paste0("cut --output-delimiter=\",\" --characters=",limits," ",fpath)
+com2
+```
+:::
+
+## fread in combination with laf
+
+Another way is to use the [laf_open_fwf](https://cran.r-project.org/web/packages/LaF/refman/LaF.html#laf_open_fwf) -function of the [LaF](https://cran.r-project.org/package=LaF)-package to read the file.
+
+```{r}
+library(LaF)
+
+# establish a file-connection
+fwfcon = laf_open_fwf(filename = fpath,
+                      column_types = rep("character",times = 19),
+                      column_widths = width)
+
+# extract the data
+df = fwfcon[1:nrow(fwfcon)]
+
+# close file-connection
+close(fwfcon)
+```
+
+With this you already have a data.frame with all the columns as characters.
+
+```{r}
+head(df)
+```
+
+In the next step you can either process every column separately, or you can convert this columns in one with a comma as a separator (we use the [unite](https://tidyr.tidyverse.org/reference/unite.html)-function of the [tidyr](https://tidyr.tidyverse.org/index.html)-package) and feed this into fread via the text-attribute (which shows the flexibility of the fread-function).
+
+```{r}
+library(tidyr)
+rfl_fread_laf_fwf = fread(text = unite(df, col = "v101", sep = ",")$v101,
+                          sep = ",")
+```
+
+This gives you the following results
+
+```{r}
+head(rfl_fread_laf_fwf)
+```
+
+## read_fwf
+
+You can also use the [read_fwf](https://readr.tidyverse.org/reference/read_fwf.html)-function of the readr-package.
+
+::: callout-note
+For a detailes explanation of what the readr-Package can do, please see
+
+Wickham H, Hester J, Bryan J (2024). *readr: Read Rectangular Text Data*. R package version 2.1.5, https://github.com/tidyverse/readr, [https://readr.tidyverse.org](https://readr.tidyverse.org/).
+:::
+
+```{r}
+library(readr)
+rfl_readr_fwf = read_fwf(file = "~/flights.fwf",
+                         col_positions = fwf_widths(width))
+```
+
+This is quite an easy and straightforward way of reading fw-files and gives you the following results
+
+```{r}
+head(rfl_readr_fwf)
+```
+
+::: callout-note
+As you can see, by guessing the column type the read_fwf-function prefers numeric/double over integer. But there are also ways to specify data types for the columns to read in.
+:::
+
+# Speed
+
+So far we have seen several possible solutions for our problem. Let's finally look at execution times for reading the files - each method is just executed once (you don't the same file several times, do you).
+
+```{r}
+#| echo: false
+
+library(microbenchmark)
+
+timed_results = microbenchmark(
+  read.fwf = {rfl_fwf = read.fwf("~/flights.fwf",
+                                 width = c(rep(6L, times = 18),19L))},
+  fread = {rfl_csv = fread("~/flights.csv",
+                           header = FALSE)},
+  fread_cmd = {
+    # calculating starting and ending positions
+    starting_pos = cumsum(c(1,width))
+    
+    # construct command
+    com = paste0(
+      "awk '{ print ",
+      paste(
+        paste0("substr($0,",starting_pos[1:length(width)],",",width,")"),
+        collapse = "\",\""
+      ),
+      " }' ",
+      fpath
+    )
+    
+    rfl_fread_fwf = fread(cmd = com,
+                          sep = ",")
+  },
+  fread_laf = {
+    # establish a file-connection
+    fwfcon = laf_open_fwf(filename = fpath,
+                          column_types = rep("character",times = 19),
+                          column_widths = width)
+    
+    # extract the data
+    df = fwfcon[1:nrow(fwfcon)]
+    
+    # close file-connection
+    close(fwfcon)
+    
+    rfl_fread_laf_fwf = fread(text = unite(df, col = "v101", sep = ",")$v101,
+                              sep = ",")
+  },
+  readr_read_fwf = {rfl_readr_fwf = read_fwf(file = "~/flights.fwf",
+                                             col_positions = fwf_widths(width),
+                                             show_col_types = FALSE)},
+  times = 1L,
+  unit = "second"
+)
+timed_results
+```
