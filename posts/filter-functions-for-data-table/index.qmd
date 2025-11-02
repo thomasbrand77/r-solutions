@@ -1,0 +1,149 @@
+---
+title: "filter functions for data.table"
+author: "Thomas Brand"
+date: "2025-11-02"
+categories: [news, code, data.table, bquote]
+draft: true
+---
+
+# Abstract
+
+# Motivation
+
+The {data.table} package provides a very sophisticated way of filtering tables. Be ist just to extract all rows that fit a certain criteria or to manipulate/update data in the table for just the selected lines.
+
+Let's create some example data
+
+```{r}
+#| label: sample data
+#| message: false
+library(data.table)
+
+dt = data.table(A = rep(LETTERS[1:3],times = 4),
+                B = rep(letters[4:9],times = 2),
+                C = seq(from = 0.02, by = 0.1, length.out = 12),
+                D = seq(from = as.Date("2025-10-01"), by = "day", length.out = 12)
+)
+dt
+```
+
+and filter them in the ordinary way:
+
+```{r}
+#| label: just filter
+
+dt[A == "B"]
+
+```
+
+Lets define a filter-expression via bquote
+
+```{r}
+#| label: filter by bquote
+
+f1 = bquote(A == "B") 
+dt[eval(f1)]
+
+```
+
+You can also combine several filters via `.()`\`
+
+```{r}
+#| label: combine filters
+
+f2 = bquote(D > as.Date("2025-10-06"))
+f1and2 = bquote(.(f1) & .(f2))
+dt[eval(f1and2)]
+
+```
+
+And in the same way you can update a data.table for just the rows that corresponds to the filter
+
+```{r}
+#| label: update by filterd rows
+
+dt2 = copy(dt)
+dt2[eval(f1and2), ':='(E = "these rows were filterd")]
+dt2
+```
+
+::: callout-important
+This works great, but is a lot of code to write, especially if you have work with the same filters on the same kind of data structure over and over again and probably want to combine one or several of them.
+:::
+
+# Solution
+
+Lets construct a set of functions the will do the filtering
+
+-   a function that executes a filter
+
+-   a function that adds a filter with `&`
+
+-   a function that adds a filter with `|`
+
+-   a function that negates an existing filter
+
+```{r}
+#| label: filter functions
+
+# a simple function to execute the filter
+execFilter = function(dt, f) {
+  dt[eval(f)]
+}
+
+# add another filter by "and"
+andFilter = function(f, andf) {
+  bquote(.(f) & .(andf))
+}
+
+# add another filter by "or"
+orFilter = function(f, orf) {
+ bquote(.(f) | .(orf)) 
+}
+
+# negate filter
+negFilter = function(f) {
+  bquote(!.(f))
+}
+
+
+```
+
+::: callout-note
+In a real life scenario we would put in additional checks for the added filters.
+:::
+
+Let's see these functions in action. We want to construct a filter, that negates our `f1and2`\` filter or where the value in column `C`\` is either 0.32 or 0.42:
+
+```{r}
+Cvalues = c(0.32, 0.42)
+# create a filter and 
+f1 |> 
+  andFilter(f2) |>
+  negFilter() |>
+  orFilter(bquote(C %in% .(Cvalues))) -> myFilter
+
+myFilter
+```
+
+We can apply this filter
+
+```{r}
+#| label: aaply a filter
+
+execFilter(dt, myFilter)
+
+```
+
+For convenience I would recommend to put these functions and filters in a Package. Additionally to the filters I would create special functions that execute my filters. e.g.
+
+```{r}
+getf1and2 = function(dt) {
+  dt[eval(f1and2)]
+}
+
+getMyFilter = function(dt) {
+  dt[eval(myFilter)]
+}
+
+```
