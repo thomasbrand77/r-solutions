@@ -1,16 +1,22 @@
 ---
 title: "filter functions for data.table"
 author: "Thomas Brand"
-date: "2025-11-02"
+date: "2025-11-09"
 categories: [news, code, data.table, bquote]
-draft: true
+draft: false
 ---
 
 # Abstract
 
+In this blog I will show you how to create custom filters which can be used in the i of a [{data.table}](https://rdatatable.gitlab.io/data.table/). This will be done with the help of the [bquote](https://www.rdocumentation.org/packages/base/versions/3.6.2/topics/bquote)-function.
+
+We will generate some functions that will combine two given filters by "and"/"or" or create a negation of an existing filter. It'll give you a little grammar to build new filters from existing ones or expand existing filters with new ones.
+
+With these tools you will save quite some time if you create certain elementary filters for your standard data sets that you use over and over again. You can gut these filters in your internal packages.
+
 # Motivation
 
-The {data.table} package provides a very sophisticated way of filtering tables. Be ist just to extract all rows that fit a certain criteria or to manipulate/update data in the table for just the selected lines.
+The [{data.table}](https://rdatatable.gitlab.io/data.table/) package provides a very sophisticated way of filtering tables. Be it just to extract all rows that fit a certain criteria or to manipulate/update data in the table for just the selected lines.
 
 Let's create some example data
 
@@ -36,7 +42,7 @@ dt[A == "B"]
 
 ```
 
-Lets define a filter-expression via bquote
+Lets define a filter-expression via bquote and evaluate it in the "i" of a data.table.
 
 ```{r}
 #| label: filter by bquote
@@ -46,7 +52,7 @@ dt[eval(f1)]
 
 ```
 
-You can also combine several filters via `.()`\`
+You can also combine several filters via `.()`
 
 ```{r}
 #| label: combine filters
@@ -68,7 +74,7 @@ dt2
 ```
 
 ::: callout-important
-This works great, but is a lot of code to write, especially if you have work with the same filters on the same kind of data structure over and over again and probably want to combine one or several of them.
+This works great, but is a lot of code to write, especially if you have to work with the same filters on the same kind of data structure over and over again and probably want to combine one or several of them.
 :::
 
 # Solution
@@ -110,12 +116,14 @@ negFilter = function(f) {
 ```
 
 ::: callout-note
-In a real life scenario we would put in additional checks for the added filters.
+In a real life scenario we would put in additional checks for the added filters, e.g. if it is a language object.
 :::
 
-Let's see these functions in action. We want to construct a filter, that negates our `f1and2`\` filter or where the value in column `C`\` is either 0.32 or 0.42:
+Let's see these functions in action. We want to construct a filter, that negates our `f1and2` filter or where the value in column `C` is either 0.32 or 0.42:
 
 ```{r}
+#| label: filters in action
+
 Cvalues = c(0.32, 0.42)
 # create a filter and 
 f1 |> 
@@ -135,14 +143,18 @@ execFilter(dt, myFilter)
 
 ```
 
+Of course, this is just a convenience. You can always create new filters with bquote in the way I showed you before. That's up to you.
+
 For convenience I would recommend to put these functions and filters in a Package. Additionally to the filters I would create special functions that execute my filters. e.g.
 
 ```{r}
-getf1and2 = function(dt) {
+#| label: example filter functions
+
+execf1and2 = function(dt) {
   dt[eval(f1and2)]
 }
 
-getMyFilter = function(dt) {
+execMyFilter = function(dt) {
   dt[eval(myFilter)]
 }
 

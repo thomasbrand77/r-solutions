@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/filter-functions-for-data-table/index.html",
       "/posts/alternatives-for-read.fwf/index.html",
       "/posts/using-fread-for-reading-csv/index.html",
       "/posts/using-foverlaps-for-time-slices/index.html",
