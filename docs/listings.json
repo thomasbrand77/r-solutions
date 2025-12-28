@@ -2,6 +2,7 @@
   {
     "listing": "/index.html",
     "items": [
+      "/posts/using-non-equi-joins-for-time-slices/index.html",
       "/posts/filter-functions-for-data-table/index.html",
       "/posts/alternatives-for-read.fwf/index.html",
       "/posts/using-fread-for-reading-csv/index.html",
