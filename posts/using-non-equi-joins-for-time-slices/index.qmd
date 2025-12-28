@@ -2,6 +2,10 @@
 title: "using non-equi joins for time slices"
 author: "Thomas Brand"
 date: "2025-12-27"
+code-fold: show
+code-tools: true
+toc: true
+toc-expand: true
 format: 
   html: 
     df-print: kable 
