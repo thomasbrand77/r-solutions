@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.7.32">
+<meta name="generator" content="quarto-1.8.25">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -69,14 +69,15 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <meta name="quarto:offset" content="../../">
 <script src="../../site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="../../site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="../../site_libs/quarto-html/axe/axe-check.js" type="module"></script>
 <script src="../../site_libs/quarto-html/popper.min.js"></script>
 <script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="../../site_libs/quarto-html/anchor.min.js"></script>
 <link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-2fef5ea3f8957b3e4ecc936fc74692ca.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="../../site_libs/quarto-html/quarto-syntax-highlighting-dark-707d8167ce6003fca903bfe2be84ab7f.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="../../site_libs/bootstrap/bootstrap-6964cec736b65266f614e8c6f7b9f238.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="dark">
+<link href="../../site_libs/bootstrap/bootstrap-ebec4c5ba3c60d5890bd0368d1fe85a0.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="dark">
 <script id="quarto-search-options" type="application/json">{
   "location": "navbar",
   "copy-button": false,
@@ -119,7 +120,7 @@ const typesetMath = (el) => {
     var macros = [];
     for (var i = 0; i < mathElements.length; i++) {
       var texText = mathElements[i].firstChild;
-      if (mathElements[i].tagName == "SPAN") {
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
         window.katex.render(texText.data, mathElements[i], {
           displayMode: mathElements[i].classList.contains('display'),
           throwOnError: false,
@@ -145,6 +146,8 @@ window.Quarto = {
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
+    <a href="../../index.html" class="navbar-brand navbar-brand-logo">
+    </a>
     <a class="navbar-brand" href="../../index.html">
     <span class="navbar-title">r-solutions</span>
     </a>
@@ -247,11 +250,11 @@ Note
 <p>In mathematical terms we have an interval, that is closed at the left and open at the right: <span class="math inline">\([a, b)\)</span>.</p>
 <p>Let’s look at some example-data.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span>
 <span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(knitr)</span>
 <span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(kableExtra)</span>
 <span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">load</span>(<span class="st">"./client_data.Rdata"</span>)</span>
-<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>dt</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>dt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -331,18 +334,18 @@ Note
 </ol>
 <p>you can easily calculate the months with the <a href="https://lubridate.tidyverse.org">lubridate</a>-package and the <a href="https://lubridate.tidyverse.org/reference/interval.html">interval</a>-function</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(lubridate)</span>
 <span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate the months</span></span>
-<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">interval</span>(<span class="at">start =</span> <span class="fu">as.Date</span>(<span class="st">"2025-02-01"</span>), <span class="at">end =</span> <span class="fu">as.Date</span>(<span class="st">"2025-04-01"</span>)) <span class="sc">%/%</span> <span class="fu">months</span>(<span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a><span class="fu">interval</span>(<span class="at">start =</span> <span class="fu">as.Date</span>(<span class="st">"2025-02-01"</span>), <span class="at">end =</span> <span class="fu">as.Date</span>(<span class="st">"2025-04-01"</span>)) <span class="sc">%/%</span> <span class="fu">months</span>(<span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 2</code></pre>
 </div>
 </div>
 <p>If we had the convention that the endDate would be the last date where the row is still valid the calulations wouldn’t add up.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate the months</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">interval</span>(<span class="at">start =</span> <span class="fu">as.Date</span>(<span class="st">"2025-02-01"</span>), <span class="at">end =</span> <span class="fu">as.Date</span>(<span class="st">"2025-03-31"</span>)) <span class="sc">%/%</span> <span class="fu">months</span>(<span class="dv">1</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Calculate the months</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="fu">interval</span>(<span class="at">start =</span> <span class="fu">as.Date</span>(<span class="st">"2025-02-01"</span>), <span class="at">end =</span> <span class="fu">as.Date</span>(<span class="st">"2025-03-31"</span>)) <span class="sc">%/%</span> <span class="fu">months</span>(<span class="dv">1</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-stdout">
 <pre><code>[1] 1</code></pre>
 </div>
@@ -366,12 +369,12 @@ Note
 </div>
 <p>First, we will generate a data.table with two columns for the begin and the end of an interval. Each row will cover exactly one month. This can be done with the following code.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>intervals <span class="ot">=</span> <span class="fu">data.table</span>(<span class="at">startDate =</span> <span class="fu">seq</span>(<span class="fu">as.Date</span>(<span class="st">"2024-09-01"</span>), <span class="at">to =</span> <span class="fu">as.Date</span>(<span class="st">"2025-04-01"</span>), <span class="at">by =</span> <span class="st">"month"</span>))</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb6"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a>intervals <span class="ot">=</span> <span class="fu">data.table</span>(<span class="at">startDate =</span> <span class="fu">seq</span>(<span class="fu">as.Date</span>(<span class="st">"2024-09-01"</span>), <span class="at">to =</span> <span class="fu">as.Date</span>(<span class="st">"2025-04-01"</span>), <span class="at">by =</span> <span class="st">"month"</span>))</span>
 <span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>intervals[,endDate <span class="sc">:</span><span class="er">=</span> <span class="fu">shift</span>(startDate, <span class="at">type =</span> <span class="st">"lead"</span>)]</span>
 <span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>intervals <span class="ot">=</span> <span class="fu">na.omit</span>(intervals)</span>
 <span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>cols <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"startDate"</span>,<span class="st">"endDate"</span>)</span>
 <span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a><span class="fu">setkeyv</span>(intervals, cols)</span>
-<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>intervals</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>intervals</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -532,8 +535,8 @@ Note
 </ul>
 <p>We get instead</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>result <span class="ot">=</span> <span class="fu">foverlaps</span>(dt, intervals, <span class="at">by.x =</span> cols, <span class="at">by.y =</span> cols)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>result</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>result <span class="ot">=</span> <span class="fu">foverlaps</span>(dt, intervals, <span class="at">by.x =</span> cols, <span class="at">by.y =</span> cols)</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>result</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -791,7 +794,7 @@ Note
 </ul>
 <p>Let’s look closer at the rows with the numbers 12, 13, 19</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>result[<span class="fu">c</span>(<span class="dv">12</span>,<span class="dv">13</span>,<span class="dv">19</span>)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>result[<span class="fu">c</span>(<span class="dv">12</span>,<span class="dv">13</span>,<span class="dv">19</span>)]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -883,7 +886,7 @@ Important
 </div>
 <p>On the other hand we have row 8, which is also wrong</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>result[<span class="fu">c</span>(<span class="dv">8</span>)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>result[<span class="fu">c</span>(<span class="dv">8</span>)]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -934,11 +937,11 @@ Important
 <h2 class="anchored" data-anchor-id="transforming-the-intervals---enddate">Transforming the intervals - endDate</h2>
 <p>Therefore we have to change our intervals from open on the right side to closed on the right side. We can do this by subtracting one day from the end. We will create a new column <code>endDatem1</code> in our <code>dt</code>- and our <code>intervals</code>-tables.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>dt[,endDatem1 <span class="sc">:</span><span class="er">=</span> endDate <span class="sc">-</span> <span class="fu">days</span>(<span class="dv">1</span>)]</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>dt[,endDatem1 <span class="sc">:</span><span class="er">=</span> endDate <span class="sc">-</span> <span class="fu">days</span>(<span class="dv">1</span>)]</span>
 <span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>intervals[,endDatem1 <span class="sc">:</span><span class="er">=</span> endDate <span class="sc">-</span> <span class="fu">days</span>(<span class="dv">1</span>)]</span>
 <span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>colsm1 <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"startDate"</span>,<span class="st">"endDatem1"</span>)</span>
 <span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a><span class="fu">setkeyv</span>(intervals, colsm1)</span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>intervals</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>intervals</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -992,9 +995,9 @@ Important
 </div>
 <p>Lets try foverlaps again with <code>startDate</code> and <code>endDatem1</code>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>result_m1 <span class="ot">=</span> <span class="fu">foverlaps</span>(dt, intervals, <span class="at">by.x =</span> colsm1, <span class="at">by.y =</span> colsm1)</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>result_m1 <span class="ot">=</span> <span class="fu">foverlaps</span>(dt, intervals, <span class="at">by.x =</span> colsm1, <span class="at">by.y =</span> colsm1)</span>
 <span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>col_selected <span class="ot">=</span> <span class="fu">c</span>(<span class="st">"startDate"</span>,<span class="st">"endDate"</span>,<span class="st">"client"</span>,<span class="st">"plan"</span>,<span class="st">"i.startDate"</span>,<span class="st">"i.endDate"</span>,<span class="st">"basicPrice"</span>,<span class="st">"discount"</span>,<span class="st">"toPayPerMonth"</span>)</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>result_m1[,..col_selected]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>result_m1[,..col_selected]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -1210,8 +1213,8 @@ Important
 <h2 class="anchored" data-anchor-id="transforming-the-intervals---startdate">Transforming the intervals - startDate</h2>
 <p>To correct the incorrect row number 8 we have to replace the startDate in every row where it is smaller than i.startDate with the value in i.startDate</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>result_m1[startDate <span class="sc">&lt;</span> i.startDate, startDate <span class="sc">:</span><span class="er">=</span> i.startDate]</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>result_m1[,..col_selected]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>result_m1[startDate <span class="sc">&lt;</span> i.startDate, startDate <span class="sc">:</span><span class="er">=</span> i.startDate]</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>result_m1[,..col_selected]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -1446,13 +1449,13 @@ Note
 <p>The solution above works as long as you are dealing with real intervals <span class="math inline">\([a,b)\)</span> where <span class="math inline">\(a&lt;b\)</span> .</p>
 <p>Sometimes, however, you can have the situation, that you have records that are only valid “a logical second”, meaning that you documented some changes in your records, but these changes didn’t lead to a real time span. In this case you have intervals where <span class="math inline">\(a=b\)</span>.</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>dt_special <span class="ot">=</span> <span class="fu">data.table</span>(<span class="at">startDate =</span> <span class="fu">as.Date</span>(<span class="fu">c</span>(<span class="st">"2025-01-01"</span>,<span class="st">"2025-02-01"</span>,<span class="st">"2025-02-01"</span>)),</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb13"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>dt_special <span class="ot">=</span> <span class="fu">data.table</span>(<span class="at">startDate =</span> <span class="fu">as.Date</span>(<span class="fu">c</span>(<span class="st">"2025-01-01"</span>,<span class="st">"2025-02-01"</span>,<span class="st">"2025-02-01"</span>)),</span>
 <span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                        <span class="at">endDate =</span> <span class="fu">as.Date</span>(<span class="fu">c</span>(<span class="st">"2025-02-01"</span>,<span class="st">"2025-02-01"</span>,<span class="st">"9999-12-31"</span>)),</span>
 <span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                        <span class="at">name =</span> <span class="fu">c</span>(<span class="st">"Doe"</span>,<span class="st">"Smith"</span>,<span class="st">"Smith"</span>),</span>
 <span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                        <span class="at">toPayPerMonth =</span> <span class="fu">c</span>(<span class="fl">1.23</span>,<span class="fl">1.23</span>,<span class="fl">2.34</span>))</span>
 <span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>dt_special[,endDatem1 <span class="sc">:</span><span class="er">=</span> endDate <span class="sc">-</span> <span class="fu">days</span>(<span class="dv">1</span>)]</span>
-<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>dt_special</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>dt_special</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -1494,7 +1497,7 @@ Note
 </div>
 <p>Lets see how foverlaps handles these situations:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>result_sp1 <span class="ot">=</span> <span class="fu">foverlaps</span>(dt_special, intervals, <span class="at">by.x =</span> colsm1, <span class="at">by.y =</span> colsm1) </span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>result_sp1 <span class="ot">=</span> <span class="fu">foverlaps</span>(dt_special, intervals, <span class="at">by.x =</span> colsm1, <span class="at">by.y =</span> colsm1) </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output cell-output-error">
 <pre><code>Error in foverlaps(dt_special, intervals, by.x = colsm1, by.y = colsm1): All entries in column 'startDate' should be &lt;= corresponding entries in column 'endDatem1' in data.table x.</code></pre>
 </div>
@@ -1504,8 +1507,8 @@ Note
 <h3 class="anchored" data-anchor-id="omit-these-rows-if-possible">Omit these rows if possible</h3>
 <p>In our use-case of this blog the easiest solution would be eliminate these rows from our dataset, as we are only interested in the amount someone has to pay which is time/date multiplied by the sum to pay per month. Lets see how we can do this</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>result_sp2 <span class="ot">=</span> <span class="fu">foverlaps</span>(dt_special[startDate <span class="sc">&lt;=</span> endDatem1], intervals, <span class="at">by.x =</span> colsm1, <span class="at">by.y =</span> colsm1)</span>
-<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>result_sp2[,.(startDate,endDate,name,toPayPerMonth)]</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>result_sp2 <span class="ot">=</span> <span class="fu">foverlaps</span>(dt_special[startDate <span class="sc">&lt;=</span> endDatem1], intervals, <span class="at">by.x =</span> colsm1, <span class="at">by.y =</span> colsm1)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>result_sp2[,.(startDate,endDate,name,toPayPerMonth)]</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -1547,10 +1550,10 @@ Note
 <h3 class="anchored" data-anchor-id="manipulate-the-start-columns-as-well">Manipulate the start columns as well</h3>
 <p>If on the other hand we are interested in conserving the information that the name-change happened without change of payment per month, we will need a different approach</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>dt_special[startDate <span class="sc">==</span> endDate, startDate <span class="sc">:</span><span class="er">=</span> startDate <span class="sc">-</span> <span class="fu">days</span>(<span class="dv">1</span>)]</span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>dt_special[startDate <span class="sc">==</span> endDate, startDate <span class="sc">:</span><span class="er">=</span> startDate <span class="sc">-</span> <span class="fu">days</span>(<span class="dv">1</span>)]</span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>result_sp3 <span class="ot">=</span> <span class="fu">foverlaps</span>(dt_special, intervals, <span class="at">by.x =</span> colsm1, <span class="at">by.y =</span> colsm1)</span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>result_sp3[i.startDate <span class="sc">==</span> endDatem1, startDate <span class="sc">:</span><span class="er">=</span> endDate]</span>
-<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>result_sp3</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>result_sp3</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 <div class="cell-output-display">
 <div class="kable-table">
 <table class="caption-top table table-sm table-striped small">
@@ -1686,13 +1689,14 @@ Note
       e.clearSelection();
     }
     const getTextToCopy = function(trigger) {
-        const codeEl = trigger.previousElementSibling.cloneNode(true);
-        for (const childEl of codeEl.children) {
-          if (isCodeAnnotation(childEl)) {
-            childEl.remove();
-          }
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
         }
-        return codeEl.innerText;
+      }
+      return codeEl.innerText;
     }
     const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
       text: getTextToCopy

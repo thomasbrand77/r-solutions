@@ -7,9 +7,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Thomas Brand">
-<meta name="dcterms.date" content="2025-07-26">
+<meta name="dcterms.date" content="2026-05-04">
 
-<title>using-fread-for-reading-csv – r-solutions</title>
+<title>A database for your data-files with duckdb – r-solutions</title>
 <style>
 code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
@@ -105,6 +105,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
     "search-label": "Search"
   }
 }</script>
+<meta name="quarto:status" content="draft">
 
 
 <link rel="stylesheet" href="../../styles.css">
@@ -113,7 +114,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <body class="nav-fixed fullcontent quarto-light">
 
 <div id="quarto-search-results"></div>
-  <header id="quarto-header" class="headroom fixed-top quarto-banner">
+  <header id="quarto-header" class="headroom fixed-top quarto-banner"><div id="quarto-draft-alert" class="alert alert-warning"><i class="bi bi-pencil-square"></i>Draft</div>
     <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
       <div class="navbar-container container-fluid">
       <div class="navbar-brand-container mx-auto">
@@ -154,12 +155,12 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <header id="title-block-header" class="quarto-title-block default page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
     <div class="quarto-title column-body">
-      <h1 class="title">using-fread-for-reading-csv</h1>
+      <h1 class="title">A database for your data-files with duckdb</h1>
                                 <div class="quarto-categories">
                 <div class="quarto-category">news</div>
                 <div class="quarto-category">code</div>
                 <div class="quarto-category">data.table</div>
-                <div class="quarto-category">fread</div>
+                <div class="quarto-category">bquote</div>
               </div>
                   </div>
   </div>
@@ -177,7 +178,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">July 26, 2025</p>
+        <p class="date">May 4, 2026</p>
       </div>
     </div>
     
@@ -198,44 +199,25 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 
 <section id="abstract" class="level1">
 <h1>Abstract</h1>
-<p>In this blog I will show you how you can use the fread-function of the data.table-package to read in csv-files which don’t adhere to certain standards for csv-files. For this I recommend using a predefined table of structure-information of the csv to read in, which will be used in a function to read in the csv via fread and then convert the data into the correct types.</p>
-<p><img src="picture.png" class="img-fluid"></p>
 </section>
-<section id="use-case" class="level1">
-<h1>Use case</h1>
-<p>Imagine we have to read a csv-file into R in order analyze the data further.</p>
-<p>Besides the functions</p>
+<section id="motivation" class="level1">
+<h1>Motivation</h1>
+<section id="setup" class="level2">
+<h2 class="anchored" data-anchor-id="setup">Setup</h2>
+<p>During your work on projects or in the data science department of a corpration you collect a lot of data form several data sources, different applications, different data bases etc.</p>
+<p>In order to achieve your goals you will have to combine informations from several data sources, e.g.&nbsp;join tables, add informations and so on.</p>
+<p>I assume it takes too long to load these data from the different sources in raw form and transform them in order to be able to work with them. So what you have done is:</p>
 <ul>
-<li><p><code>read.csv()</code> from the utils-package,</p></li>
-<li><p><code>read_csv()</code> from the <a href="https://readr.tidyverse.org">readr</a>-package</p></li>
-<li><p><code>duckdb_read_csv()</code> from the <a href="https://r.duckdb.org">duckdb</a>-package</p></li>
+<li><p>you downloaded your data</p></li>
+<li><p>you transformed your data in the way that suits your needs (e.g.&nbsp;convert all dates to the same format, filled in missing values, omitted rows that aren’t necessary for your work and so on)</p></li>
+<li><p>you saved your data on disk preferably in a data format that is made for data analysis (e.g.&nbsp;the parquet-format)</p></li>
 </ul>
-<p>among others, we will focus on the <a href="https://rdatatable.gitlab.io/data.table/reference/fread.html">fread()</a> from the <a href="https://rdatatable.gitlab.io/data.table/index.html">data.table</a>-package as it delivers quite an extraordinary performance. The other functions would offer you the same functionality, maybe with a different syntax.</p>
-<p>Our csv-file may look like this</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>client_number,fromDate,toDate,toPayPerMonth</span>
-<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="st">"001"</span>,<span class="dv">2025-01-01</span>,<span class="dv">2025-05-01</span>,<span class="fl">1.23</span></span>
-<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="st">"123"</span>,<span class="dv">2024-12-24</span>,<span class="dv">2025-02-02</span>,<span class="fl">2.34</span></span>
-<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="st">"987654"</span>,<span class="dv">2025-07-05</span>,<span class="dv">2099-12-31</span>,<span class="fl">3.45</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>If we read it with fread and let the function decide how to transform the columns into datatypes</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(data.table)</span>
-<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>dt <span class="ot">=</span> <span class="fu">fread</span>(<span class="st">"./nice.csv"</span>)</span>
-<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>dt</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   client_number   fromDate     toDate toPayPerMonth
-           &lt;int&gt;     &lt;IDat&gt;     &lt;IDat&gt;         &lt;num&gt;
-1:             1 2025-01-01 2025-05-01          1.23
-2:           123 2024-12-24 2025-02-02          2.34
-3:        987654 2025-07-05 2099-12-31          3.45</code></pre>
-</div>
-</div>
-<p>we can see, that</p>
-<ul>
-<li><p>it correctly encoded the Dates <code>fromDate</code> and <code>toDate</code> as well as the number <code>toPayPerMonth</code>,</p></li>
-<li><p>but it wrongly turned the <code>client_number</code>, which we wanted to be a character (as was indicated by the leading 0 and the quotation marks around the data) into an integer type</p></li>
-</ul>
+<p>Sometimes you save your data in files with suffixes for month and years.</p>
+<p>Maybe you have made yourself a special table with informations on certain that aren’t in any tables of your applications, but are none the less useful for your analysis or presentation of the data. Think of a classification-information of your products where for analysis A it has to be in category 1 and for analysis B it has to be in category 2.</p>
+<p>Over times you accumulated a lot of files in different locations on disk and with some luck you can still tell where to find the data files.</p>
+</section>
+<section id="what-probably-happened" class="level2">
+<h2 class="anchored" data-anchor-id="what-probably-happened">What probably happened</h2>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
 <div class="callout-icon-container">
@@ -246,180 +228,44 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>Let me mention here, that if there had been one letter in the first column, then fread would have guessed correctly to use a character-type for the column.</p>
+<p>At least, this is what I did.</p>
 </div>
 </div>
-<p>We could correct that with some easy data-transformations.</p>
-<p>Unfortunately our (real) csv</p>
-<ul>
-<li><p>is without an header</p></li>
-<li><p>doesn’t adhere to common datatype conventions</p></li>
-</ul>
+<p>You have built loading functions for each type of file that you use.</p>
+<p>If it is just one big data file or several parquet files in a directory or with partitioning you can just hard code the path of the data into the loading function.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="dv">001</span>,<span class="dv">20250101</span>,<span class="dv">05012025</span>,<span class="fl">1.23</span></span>
-<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a><span class="dv">123</span>,<span class="dv">20241224</span>,<span class="dv">02022025</span>,<span class="fl">2.34</span></span>
-<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a><span class="dv">987654</span>,<span class="dv">20250705</span>,<span class="dv">12312099</span>,<span class="fl">3.45</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="co"># loading function with column selection</span></span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>loadTableA <span class="ot">=</span> <span class="cf">function</span>(<span class="at">path =</span> <span class="st">"./dir1/datafile.parquet"</span>,</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>                      <span class="at">columns =</span> <span class="cn">NULL</span>) {</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a>  arrow<span class="sc">::</span><span class="fu">read_parquet</span>(<span class="at">file =</span> path,</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a>                      <span class="at">col_select =</span> columns)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
-<p>Furthermore it represents dates in different formats depending on the column.</p>
-</section>
-<section id="solution" class="level1">
-<h1>Solution</h1>
-<section id="developing-a-solution" class="level2">
-<h2 class="anchored" data-anchor-id="developing-a-solution">Developing a solution</h2>
-<p>The fread-function offers some options/attributes to solve this problems:</p>
-<ul>
-<li><p><code>col.names</code></p></li>
-<li><p><code>colClasses</code></p></li>
-</ul>
-<div class="callout callout-style-default callout-note callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Note
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>For a detailed explanation of what you can do with the data.table-package please see</p>
-<p>Barrett T, Dowle M, Srinivasan A, Gorecki J, Chirico M, Hocking T, Schwendinger B, Krylov I (2025).&nbsp;<em>data.table: Extension of ‘data.frame’</em>. R package version 1.17.99,&nbsp;<a href="https://r-datatable.com/">https://r-datatable.com</a>.</p>
-</div>
-</div>
-<p>A two step process (reading and post-processing) with these two attributes will give us</p>
+<p>If you saved your files in different locations depending on certain conditions e.g.&nbsp;the month and year you generated the data you probably combined the solution above with a file finding function.</p>
 <div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>dtUgly <span class="ot">=</span> <span class="fu">fread</span>(<span class="st">"./ugly.csv"</span>,</span>
-<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>               <span class="at">col.names =</span> <span class="fu">c</span>(<span class="st">"client_number"</span>, <span class="st">"fromDate"</span>, <span class="st">"toDate"</span>, <span class="st">"toPayPerMonth"</span>),</span>
-<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>               <span class="at">colClasses =</span> <span class="fu">c</span>(<span class="st">"character"</span>,<span class="st">"character"</span>,<span class="st">"character"</span>,<span class="st">"numeric"</span>))</span>
-<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>dtUgly[,<span class="st">':='</span>(<span class="at">fromDate =</span> <span class="fu">as.Date</span>(fromDate, <span class="at">format =</span> <span class="st">"%Y%m%d"</span>),</span>
-<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>             <span class="at">toDate =</span> <span class="fu">as.Date</span>(toDate, <span class="at">format =</span> <span class="st">"%m%d%Y"</span>))]</span>
-<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a>dtUgly</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   client_number   fromDate     toDate toPayPerMonth
-          &lt;char&gt;     &lt;Date&gt;     &lt;Date&gt;         &lt;num&gt;
-1:           001 2025-01-01 2025-05-01          1.23
-2:           123 2024-12-24 2025-02-02          2.34
-3:        987654 2025-07-05 2099-12-31          3.45</code></pre>
-</div>
-</div>
-<p>which is the correct solution.</p>
-</section>
-<section id="using-predefined-data-structures" class="level2">
-<h2 class="anchored" data-anchor-id="using-predefined-data-structures">Using predefined data-structures</h2>
-<p>If you are reading such a csv only once the procedure above works quite well. But if you have several different csv-files it might be tedious to program a separate function for each csv.</p>
-<p>Imagine you have a function with the attributes</p>
-<ul>
-<li><p><code>pathToCSV</code></p></li>
-<li><p><code>structureOfCSV</code></p></li>
-</ul>
-<p>The key to this function is the kind of information that you encode in <code>structureOfCSV</code>. This attribute is a data.table with the following columns:</p>
-<ul>
-<li><p><code>names</code> for the column-names</p></li>
-<li><p><code>classes</code> for die classes of the columns</p></li>
-<li><p><code>dateTypes</code> for the format of the date-columns</p></li>
-<li><p><code>numericFactor</code> for manipulations to numeric columns</p></li>
-</ul>
-<p>Let’s have a look at the function</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>readCSV <span class="ot">=</span> <span class="cf">function</span>(pathToCSV,</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>                   structureOfCSV) {</span>
-<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="co"># read csv</span></span>
-<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  dt <span class="ot">=</span> <span class="fu">fread</span>(<span class="at">input =</span> pathToCSV,</span>
-<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>             <span class="at">col.names =</span> structureOfCSV<span class="sc">$</span>names,</span>
-<span id="cb7-6"><a href="#cb7-6" aria-hidden="true" tabindex="-1"></a>             <span class="at">colClasses =</span> structureOfCSV<span class="sc">$</span>classes)</span>
-<span id="cb7-7"><a href="#cb7-7" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-8"><a href="#cb7-8" aria-hidden="true" tabindex="-1"></a>  <span class="co"># convert date-types</span></span>
-<span id="cb7-9"><a href="#cb7-9" aria-hidden="true" tabindex="-1"></a>  dateCols <span class="ot">=</span> structureOfCSV[<span class="sc">!</span><span class="fu">is.na</span>(dateTypes),.(names, dateTypes)]</span>
-<span id="cb7-10"><a href="#cb7-10" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-11"><a href="#cb7-11" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">nrow</span>(dateCols) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
-<span id="cb7-12"><a href="#cb7-12" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(dateCols)) {</span>
-<span id="cb7-13"><a href="#cb7-13" aria-hidden="true" tabindex="-1"></a>      name <span class="ot">=</span> dateCols[i]<span class="sc">$</span>names</span>
-<span id="cb7-14"><a href="#cb7-14" aria-hidden="true" tabindex="-1"></a>      dt[,(name) <span class="sc">:</span><span class="er">=</span> <span class="fu">as.Date</span>(<span class="fu">get</span>(name),<span class="at">format =</span> dateCols[i]<span class="sc">$</span>dateTypes)]</span>
-<span id="cb7-15"><a href="#cb7-15" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb7-16"><a href="#cb7-16" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-17"><a href="#cb7-17" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-18"><a href="#cb7-18" aria-hidden="true" tabindex="-1"></a>  <span class="co"># convert numeric types</span></span>
-<span id="cb7-19"><a href="#cb7-19" aria-hidden="true" tabindex="-1"></a>  numericCols <span class="ot">=</span> structureOfCSV[<span class="sc">!</span><span class="fu">is.na</span>(numericFactor),.(names, numericFactor)]</span>
-<span id="cb7-20"><a href="#cb7-20" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-21"><a href="#cb7-21" aria-hidden="true" tabindex="-1"></a>  <span class="cf">if</span>(<span class="fu">nrow</span>(numericCols) <span class="sc">&gt;</span> <span class="dv">0</span>) {</span>
-<span id="cb7-22"><a href="#cb7-22" aria-hidden="true" tabindex="-1"></a>    <span class="cf">for</span> (i <span class="cf">in</span> <span class="dv">1</span><span class="sc">:</span><span class="fu">nrow</span>(numericCols)) {</span>
-<span id="cb7-23"><a href="#cb7-23" aria-hidden="true" tabindex="-1"></a>      name <span class="ot">=</span> numericCols[i]<span class="sc">$</span>names</span>
-<span id="cb7-24"><a href="#cb7-24" aria-hidden="true" tabindex="-1"></a>      dt[,(name) <span class="sc">:</span><span class="er">=</span> <span class="fu">get</span>(name) <span class="sc">*</span> numericCols[i]<span class="sc">$</span>numericFactor]</span>
-<span id="cb7-25"><a href="#cb7-25" aria-hidden="true" tabindex="-1"></a>    }</span>
-<span id="cb7-26"><a href="#cb7-26" aria-hidden="true" tabindex="-1"></a>  }</span>
-<span id="cb7-27"><a href="#cb7-27" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb7-28"><a href="#cb7-28" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(dt)</span>
-<span id="cb7-29"><a href="#cb7-29" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>The corresponding structure for our file “ugly.csv” would look like this</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>structureOfCSV <span class="ot">=</span> <span class="fu">data.table</span>(</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">names =</span> <span class="fu">c</span>(<span class="st">"client_number"</span>, <span class="st">"fromDate"</span>, <span class="st">"toDate"</span>, <span class="st">"toPayPerMonth"</span>),</span>
-<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">classes =</span> <span class="fu">c</span>(<span class="st">"character"</span>,<span class="st">"character"</span>,<span class="st">"character"</span>,<span class="st">"numeric"</span>),</span>
-<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">dateTypes =</span> <span class="fu">c</span>(<span class="cn">NA_character_</span>,<span class="st">"%Y%m%d"</span>,<span class="st">"%m%d%Y"</span>,<span class="cn">NA_character_</span>),</span>
-<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">numericFactor =</span> <span class="fu">c</span>(<span class="cn">NA_real_</span>,<span class="cn">NA_real_</span>,<span class="cn">NA_real_</span>,<span class="cn">NA_real_</span>)</span>
-<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>Let’s see how it can all work together:</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>tbl <span class="ot">=</span> <span class="fu">readCSV</span>(<span class="st">"./ugly.csv"</span>,</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>              structureOfCSV)</span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>tbl</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>   client_number   fromDate     toDate toPayPerMonth
-          &lt;char&gt;     &lt;Date&gt;     &lt;Date&gt;         &lt;num&gt;
-1:           001 2025-01-01 2025-05-01          1.23
-2:           123 2024-12-24 2025-02-02          2.34
-3:        987654 2025-07-05 2099-12-31          3.45</code></pre>
-</div>
-</div>
-<p>and it will do the trick.</p>
-<div class="callout callout-style-default callout-tip callout-titled">
-<div class="callout-header d-flex align-content-center">
-<div class="callout-icon-container">
-<i class="callout-icon"></i>
-</div>
-<div class="callout-title-container flex-fill">
-Tip
-</div>
-</div>
-<div class="callout-body-container callout-body">
-<p>To go even further you would have a repository of different structureOfCSV-objects - one for each kind of csv-file you have to read.</p>
-<p>You cold even build some wrapper-functions around <code>readCSV</code> which use just the predefined structure. Imagine you have the structures <code>structureofCSV1</code> and <code>structureOfCSV2</code>.</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>structureOfCSV1 <span class="ot">=</span> <span class="fu">data.table</span>(</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">names =</span> <span class="fu">c</span>(<span class="st">"client_number"</span>, <span class="st">"fromDate"</span>),</span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">classes =</span> <span class="fu">c</span>(<span class="st">"character"</span>,<span class="st">"character"</span>),</span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">dateTypes =</span> <span class="fu">c</span>(<span class="cn">NA_character_</span>,<span class="st">"%Y%m%d"</span>),</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">numericFactor =</span> <span class="fu">c</span>(<span class="cn">NA_real_</span>,<span class="cn">NA_real_</span>)</span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>structureOfCSV2 <span class="ot">=</span> <span class="fu">data.table</span>(</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="at">names =</span> <span class="fu">c</span>(<span class="st">"client_number"</span>, <span class="st">"toDate"</span>, <span class="st">"toPayPerMonth"</span>),</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  <span class="at">classes =</span> <span class="fu">c</span>(<span class="st">"character"</span>,<span class="st">"character"</span>,<span class="st">"numeric"</span>),</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">dateTypes =</span> <span class="fu">c</span>(<span class="cn">NA_character_</span>,<span class="st">"%m%d%Y"</span>,<span class="cn">NA_character_</span>),</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">numericFactor =</span> <span class="fu">c</span>(<span class="cn">NA_real_</span>,<span class="cn">NA_real_</span>,<span class="cn">NA_real_</span>)</span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-<p>You would then build the following functions</p>
-<div class="cell">
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>readCSV1 <span class="ot">=</span> <span class="cf">function</span>(pathToCSV) {</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">readCSV</span>(<span class="at">pathToCSV =</span> pathToCSV,</span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>          <span class="at">structureOfCSV =</span> structureOfCSV1)</span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>readCSV2 <span class="ot">=</span> <span class="cf">function</span>(pathToCSV) {</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">readCSV</span>(<span class="at">pathToCSV =</span> pathToCSV,</span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>          <span class="at">structureOfCSV =</span> structureOfCSV2)</span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a><span class="co"># usage</span></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a><span class="co">#dt1 = readCSV1("insert path here")</span></span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a><span class="co">#dt2 = readCSV2("insert path here")</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
-</div>
-</div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="co"># function to find a file</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>findFileTableA <span class="ot">=</span> <span class="cf">function</span>(<span class="at">month =</span> <span class="fu">month</span>(<span class="fu">Sys.Date</span>()),</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>                          <span class="at">year =</span> <span class="fu">year</span>(<span class="fu">Sys.Date</span>())) {</span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">normalizePath</span>(</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>      <span class="fu">file.path</span>(<span class="st">"."</span>,</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>                <span class="st">"dir1"</span>,</span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>                year,</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>                month)),</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">mustWork =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a><span class="co"># loading function with column selection</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>loadTableA <span class="ot">=</span> <span class="cf">function</span>(<span class="at">path =</span> <span class="cn">NULL</span>,</span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a>                      <span class="at">columns =</span> <span class="cn">NULL</span>) {</span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  arrow<span class="sc">::</span><span class="fu">read_parquet</span>(<span class="at">file =</span> path,</span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a>                      <span class="at">col_select =</span> columns)</span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a><span class="co"># using it</span></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a>pathToFile <span class="ot">=</span> <span class="fu">findFileTableA</span>(<span class="dv">5</span>,<span class="dv">2026</span>)</span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>tab <span class="ot">=</span> <span class="fu">loadTableA</span>(pathToFile,</span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>                 <span class="fu">c</span>(<span class="st">"col1"</span>,<span class="st">"col5"</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </div>
 <div class="callout callout-style-default callout-note callout-titled">
 <div class="callout-header d-flex align-content-center">
@@ -431,18 +277,59 @@ Note
 </div>
 </div>
 <div class="callout-body-container callout-body">
-<p>We didn’t use the option of <code>numericFactor</code> as our csv had a decimal point. You would have used this option if the values are in cent instead of dollar/euro.</p>
-<p>You could also expand the functionality of readCSV further by providing columns in structureOfCSV such as</p>
+<p>I used pretty much base R functions. Of course you can use more sophisticated file/path function e.g.&nbsp;in the <a href="https://fs.r-lib.org">{fs}</a> package</p>
+</div>
+</div>
+<p>The afore mentioned files with additional informations are probably stored in your packages that you have built in order to be always on hand for your analysis.</p>
+<div class="callout callout-style-default callout-caution callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Caution
+</div>
+</div>
+<div class="callout-body-container callout-body">
+<p>This strategy works!</p>
+<p>It works for you, for your team, for R.</p>
+<p>But it gets difficult if you want to share all your data with another department. They will have to learn your conventions, use your code.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="solution---duckdb" class="level1">
+<h1>Solution - duckdb</h1>
+<section id="what-we-strive-for" class="level2">
+<h2 class="anchored" data-anchor-id="what-we-strive-for">What we strive for</h2>
+<p>We would like to have</p>
 <ul>
-<li><p>rounding, to round numbers</p></li>
-<li><p>split.character, to split a character column into several columns containing different informations</p></li>
-<li><p>etc.</p></li>
+<li><p>one single entry point for all your data</p></li>
+<li><p>an entry point, that can be broadly used</p></li>
+<li><p>an entry point that will not have to be regenerated if you update your data.</p></li>
 </ul>
+<p>In short: we are talking about putting all your data in a database. But you will have to change all your data-connections as well.</p>
+<p>Copying your data to a database will double your disk space needed for data.</p>
+<p>And don’t underestimate the amount of time and knowledge it requires to administrate a database.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
 </div>
 </div>
+<div class="callout-body-container callout-body">
+<p><a href="https://duckdb.org">Duckdb</a> and the <a href="https://r.duckdb.org">{duckdb}</a> package offers you a solution for this kind of problem.</p>
+</div>
+</div>
+</section>
+</section>
+<section id="closing-remarks" class="level1">
+<h1>Closing Remarks</h1>
 
 
-</section>
 </section>
 
 <div id="quarto-appendix" class="default"><section class="quarto-appendix-contents" id="quarto-reuse"><h2 class="anchored quarto-appendix-heading">Reuse</h2><div class="quarto-appendix-contents"><div><a rel="license" href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a></div></div></section></div></main> <!-- /main -->
