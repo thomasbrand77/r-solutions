@@ -1,8 +1,8 @@
 ---
 title: "A database for your data-files with duckdb"
 author: "Thomas Brand"
-date: "2026-05-04"
-categories: [news, code, data.table, bquote]
+date: "2026-07-05"
+categories: [news, code, arrow, duckdb]
 draft: true
 ---
 
@@ -10,6 +10,8 @@ draft: true
 #| label: setup
 #| include: FALSE
 
+# delete duckdb database
+fs::file_delete("./myDuck.db")
 #here::i_am("posts/database-for-your-files-duckdb") 
 ```
 
@@ -33,7 +35,7 @@ I assume it takes too long to load these data from the different sources in raw 
 
 Sometimes you save your data in files with suffixes for month and years.
 
-Maybe you have made yourself a special table with informations that aren't in any tables of your applications, but are none the less useful for your analysis or presentation of the data. Think of a classification-information of your products where for analysis A it has to be in category 1 and for analysis B it has to be in category 2.
+Maybe you have made yourself a special table with informations that aren't in any tables of your applications, but are none the less useful/needed for your analysis or presentation of the data. Think of a classification-information of your products where for analysis A it has to be in category 1 and for analysis B it has to be in category 2.
 
 Over times you accumulated a lot of files in different locations on disk and with some luck you can still tell where to find the data files.
 
@@ -58,6 +60,14 @@ loadTableA = function(path = "./dir1/datafile.parquet",
                       col_select = columns)
 }
 ```
+
+::: callout-note
+If you use the open_dataset-function of the arrow-Package (see <https://arrow.apache.org/docs/r/reference/open_dataset.html>) you can even combine row filtering features with your loading-function.
+
+For a detailed explanation of what you can do with the[{arrow}](https://arrow.apache.org/docs/r/index.html) package please see
+
+Richardson N, Cook I, Crane N, Dunnington D, Fran\<U+00E7\>ois R, Keane J, Mecum B, Moldovan-Gr\<U+00FC\>nfeld D, Ooms J, Wujciak-Jens J, Apache Arrow (2026). *arrow: Integration to 'Apache' 'Arrow'*. R package version 24.0.0, <https://github.com/apache/arrow/>.
+:::
 
 If you saved your files in different locations depending on certain conditions e.g. the month and year you generated the data you probably combined the solution above with a file finding function.
 
@@ -161,6 +171,8 @@ write_parquet(x = weather,
 
 ```
 
+With this we have serveral parquet-files with tables and even on directory with segmented data.
+
 ## Setup a database
 
 For this we create a duckdb on disk an fill it with views to the parquet-files on disk
@@ -202,6 +214,8 @@ result
 Create Views for every parquet-file in a directory and/or replace it if it already exists
 
 ```{r}
+#| label: dynamik view creation
+
 parquetFiles = list.files("database", 
                           pattern = "*.parquet")
 
@@ -224,15 +238,98 @@ for (f in parquetFiles) {
 dbListTables(con)
 ```
 
+Query the airports
+
+```{r}
+#| label: query airports 1
+
+airp = dbGetQuery(conn = con, "
+                  SELECT * 
+                  FROM airports
+                  LIMIT 5")
+airp
+```
+
+Query faa = "BMX"
+
+```{r}
+dbGetQuery(conn = con,"
+           SELECT *
+           FROM airports
+           WHERE faa = 'BMX'")
+```
+
 Don't forget to close your database connection
 
 ```{r}
-# close database
+#| label: close database
+
 dbDisconnect(con)
 ```
+
+## Size of data base
+
+Let's look at the size of the database
+
+```{r}
+#| label: size of database
+
+fs::file_size("./myDuck.db")
+```
+
+The data itself are quite larger
+
+```{r}
+#| label: size of data
+
+fs::dir_ls("./database", recurse = TRUE) |>
+  fs::file_size() |>
+  sum()
+```
+
+## Change or append datasets
+
+We'll change an append die airports data
+
+```{r}
+#| label: manipulate airport data
+
+library(data.table)
+airports = setDT(read_parquet("./database/airports.parquet"))
+bmx = airports[faa == "BMX"][, name := "Fancy Airport Name"]
+airports[faa == "BMX", name := paste("Very",name, sep = " ")]
+airports = rbind(airports, bmx)
+write_parquet(airports, sink = "./database/airports.parquet")
+```
+
+Now we open the data base again and repeat the query for faa = "BMX
+
+```{r}
+#| label: second query
+
+# create a database driver
+drv = duckdb(dbdir = "./myDuck.db")
+
+# get a connection to the database
+con = dbConnect(drv)
+
+# query
+result = dbGetQuery(conn = con,"
+                    SELECT *
+                    FROM airports
+                    WHERE faa = 'BMX'")
+
+dbDisconnect(con)
+
+result
+```
+
+We can see, that it is really a VIEW we have here, so that a change in the underlying data reflects to the data base.
 
 # Closing Remarks
 
 The code above to create a VIEW from every parquet-file in a directory is in my opinion quite useful if you have your classification-information tables or mapping tables inside your package. These files are stored in the data-directory of your package in a csv or Rdata format.
 
-While duckdb comes with a function
+While duckdb comes with a function to read csv-files (see <https://duckdb.org/docs/current/data/csv/overview> ) I don't recommend it as csv-files are easy to read for the human eye but are difficult to interpret for the machine. Think of the different way you can write a date.
+
+So for this special purpose I recommend that you convert your Rdata files into parquet-format. This is quite easily done by inserting an R-script at the end of the R-directory of your package, that converts every Rdata-file or Rds-file of the data-directory of your package into parquet-format. You will end up with two formats of the same data in your data-directory - one Rdata and one parquet of each data-file.
