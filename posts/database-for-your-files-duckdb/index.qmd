@@ -6,27 +6,34 @@ categories: [news, code, data.table, bquote]
 draft: true
 ---
 
+```{r}
+#| label: setup
+#| include: FALSE
+
+#here::i_am("posts/database-for-your-files-duckdb") 
+```
+
 # Abstract
 
 # Motivation
 
 ## Setup
 
-During your work on projects or in the data science department of a corpration you collect a lot of data form several data sources, different applications, different data bases etc.
+During your work on projects or in the data science department of a corporation you collect a lot of data form several data sources, different applications, different data bases etc.
 
 In order to achieve your goals you will have to combine informations from several data sources, e.g. join tables, add informations and so on.
 
 I assume it takes too long to load these data from the different sources in raw form and transform them in order to be able to work with them. So what you have done is:
 
--   you downloaded your data
+- you downloaded your data
 
--   you transformed your data in the way that suits your needs (e.g. convert all dates to the same format, filled in missing values, omitted rows that aren't necessary for your work and so on)
+- you transformed your data in the way that suits your needs (e.g. convert all dates to the same format, filled in missing values, omitted rows that aren't necessary for your work and so on)
 
--   you saved your data on disk preferably in a data format that is made for data analysis (e.g. the parquet-format)
+- you saved your data on disk preferably in a data format that is made for data analysis (e.g. the parquet-format)
 
 Sometimes you save your data in files with suffixes for month and years.
 
-Maybe you have made yourself a special table with informations on certain that aren't in any tables of your applications, but are none the less useful for your analysis or presentation of the data. Think of a classification-information of your products where for analysis A it has to be in category 1 and for analysis B it has to be in category 2.
+Maybe you have made yourself a special table with informations that aren't in any tables of your applications, but are none the less useful for your analysis or presentation of the data. Think of a classification-information of your products where for analysis A it has to be in category 1 and for analysis B it has to be in category 2.
 
 Over times you accumulated a lot of files in different locations on disk and with some luck you can still tell where to find the data files.
 
@@ -66,8 +73,9 @@ findFileTableA = function(month = month(Sys.Date()),
       file.path(".",
                 "dir1",
                 year,
-                month)),
-    mustWork = TRUE)
+                month),
+      mustWork = TRUE)
+  )
 }
 
 # loading function with column selection
@@ -104,11 +112,11 @@ But it gets difficult if you want to share all your data with another department
 
 We would like to have
 
--   one single entry point for all your data
+- one single entry point for all your data
 
--   an entry point, that can be broadly used
+- an entry point, that can be broadly used
 
--   an entry point that will not have to be regenerated if you update your data.
+- an entry point that will not have to be regenerated if you update your data.
 
 In short: we are talking about putting all your data in a database. But you will have to change all your data-connections as well.
 
@@ -118,6 +126,113 @@ And don't underestimate the amount of time and knowledge it requires to administ
 
 ::: callout-note
 [Duckdb](https://duckdb.org) and the [{duckdb}](https://r.duckdb.org) package offers you a solution for this kind of problem.
+
+For a detailed explanation of what you can do with duckdb please see
+
+Mühleisen H, Raasveldt M (2026). *duckdb: DBI Package for the DuckDB Database Management System*. R package version 1.5.3, <https://r.duckdb.org/>.
 :::
 
+## Prepare some data
+
+For our demonstration we prepare some data. For this we will use the {nycflights23} data.
+
+```{r}
+#| label: data preparation parquet
+#| messages: FALSE
+
+library(nycflights23)
+library(arrow)
+
+write_dataset(dataset = flights,
+              path = here::here("database/flights"),
+              format = "parquet",
+              partitioning = "dest")
+
+write_parquet(x = airlines,
+              sink = here::here("database/airlines.parquet"))
+
+write_parquet(x = airports,
+              sink = here::here("database/airports.parquet"))
+write_parquet(x = planes,
+              sink = here::here("database/planes.parquet"))
+
+write_parquet(x = weather,
+              sink = here::here("database/weather.parquet"))
+
+```
+
+## Setup a database
+
+For this we create a duckdb on disk an fill it with views to the parquet-files on disk
+
+```{r}
+#| label: creating duckdb 
+
+library(duckdb)
+
+# create a database driver
+drv = duckdb(dbdir = "./myDuck.db")
+
+# get a connection to the database
+con = dbConnect(drv)
+
+# create View for the dataset
+dbExecute(con,
+          "CREATE VIEW flights AS
+                SELECT * from read_parquet('database/flights/')")
+
+# show tables
+dbListTables(con)
+```
+
+Query this new table
+
+```{r}
+#| label: query the database
+
+result = dbGetQuery(conn = con,"
+                    SELECT tailnum, dep_delay, arr_delay 
+                    FROM flights
+                    WHERE tailnum = 'N807JB' and day = 1
+                    ")
+
+result
+```
+
+Create Views for every parquet-file in a directory and/or replace it if it already exists
+
+```{r}
+parquetFiles = list.files("database", 
+                          pattern = "*.parquet")
+
+library(glue)
+
+for (f in parquetFiles) {
+  fwoExt = tools::file_path_sans_ext(f)
+  fwithPath = file.path("database", f)
+  sqlString = glue_sql("
+                       CREATE OR REPLACE VIEW
+                       {`fwoExt`} AS
+                       SELECT * from read_parquet({`fwithPath`})", 
+                       .con = con)
+  
+  
+  dbExecute(con,
+            sqlString)
+}
+
+dbListTables(con)
+```
+
+Don't forget to close your database connection
+
+```{r}
+# close database
+dbDisconnect(con)
+```
+
 # Closing Remarks
+
+The code above to create a VIEW from every parquet-file in a directory is in my opinion quite useful if you have your classification-information tables or mapping tables inside your package. These files are stored in the data-directory of your package in a csv or Rdata format.
+
+While duckdb comes with a function
