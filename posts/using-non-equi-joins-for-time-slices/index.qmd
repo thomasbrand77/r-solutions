@@ -1,7 +1,7 @@
 ---
 title: "using non-equi joins for time slices"
 author: "Thomas Brand"
-date: "2025-12-27"
+date: "2026-07-04"
 code-fold: show
 code-tools: true
 toc: true
@@ -12,6 +12,10 @@ format:
 categories: [news, code, data.table]
 draft: false
 ---
+
+::: {.callout-note appearance="simple"}
+This is an updated version of this blog-post from 2025-12-27.
+:::
 
 # Abstract
 
@@ -160,11 +164,11 @@ head(result[,.(x_startDate, x_endDate, startDate, endDate, i.startDate, i.endDat
 
 where
 
--   `x_startDate` and `x_endDate` are the results of the joining operation
+- `x_startDate` and `x_endDate` are the results of the joining operation
 
--   `startDate` and `endDate` are the columns from the data.table `dt`
+- `startDate` and `endDate` are the columns from the data.table `dt`
 
--   `i.startDate` and `i.endDate` are the columns from the data.table `intervals`
+- `i.startDate` and `i.endDate` are the columns from the data.table `intervals`
 
 We can't use the `x_startDate` and `x_endDate` because the end is before the start. That is because the joined column-values are overwritten by the i-values of the join-columns.
 
@@ -201,15 +205,16 @@ For convenience let's build a function that does all this for us.
 calcTSL = function(dt,
                    intervals,
                    cols_dt = c("startDate", "endDate"),
-                   cols_intervals = c("startDate", "endDate")) {
+                   cols_intervals = c("startDate", "endDate"),
+                   id_dt = "client") {
   
   cols_cp = paste("cp",cols_dt, sep = ".")
   cols_i  = paste("i",cols_intervals, sep = ".")
-  cols_cp_i = c(cols_cp, cols_i)
+  cols_to_delete = c(cols_cp, cols_i)
   
   # prepare intervals: generate join-columns
-  intervals[,(cols_cp) := lapply(.SD, copy), .SDcols = cols_intervals]
-  setkeyv(intervals, cols_cp)
+  intervals[,(cols_i) := lapply(.SD, copy), .SDcols = cols_intervals]
+  setkeyv(intervals, cols_i)
   
   # repare dt: generate join-columns
   dt[,(cols_cp) := lapply(.SD, copy), .SDcols = cols_dt]
@@ -217,8 +222,8 @@ calcTSL = function(dt,
   
   result = dt[
     intervals,
-    on = c(paste0(cols_cp[2]," > ",cols_cp[1]), 
-           paste0(cols_cp[1]," < ",cols_cp[2]))
+    on = c(paste0(cols_cp[2]," > ",cols_intervals[1]), 
+           paste0(cols_cp[1]," < ",cols_intervals[2]))
   ][, # programming on data.table
     ':='(start = pmax(start, i.start),
          end   = pmin(end,   i.end)),
@@ -227,11 +232,11 @@ calcTSL = function(dt,
                i.start = cols_i[1],
                i.end   = cols_i[2])
   ][, # delete unnecessary columns
-    (cols_cp_i) := NULL
+    (cols_to_delete) := NULL
   ]
   
-  # 
-  setkeyv(result, c("client",cols_dt))
+  # sort result by id + interval
+  setkeyv(result, c(id_dt,cols_dt))
   
   return(result)
 }
@@ -335,16 +340,17 @@ time_measure = microbenchmark(
                      copy(orig_intervals))
   },
 times = 1L,
-unit = "nanoseconds")
+unit = "milliseconds")
 
 print(time_measure)
 ```
 
-We can see, that the foverlaps-function and the non-equi-join-function needed more or less the same time with the microbenchmark-package. To better see where the non-equi-join loses against the foverlaps we can use the profvis package (by the way: the `setkeyv` used up more time than the joining operations).
+We can see, that the foverlaps-function and the non-equi-join-function needed more or less the same time with the microbenchmark-package. To better see the differences, we can use the profvis package (by the way: the `setkeyv` used up more time than the joining operations).
 
 ```{r}
 #| label: profile-of-non-equi-join
 #| eval: false
+library(profvis)
 dt100000_tsl = copy(dt100000)
 profvis(expr = {
   resTSL = calcTSL(dt100000_tsl,
