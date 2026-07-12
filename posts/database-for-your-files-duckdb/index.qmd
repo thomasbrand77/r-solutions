@@ -1,9 +1,9 @@
 ---
 title: "A database for your data-files with duckdb"
 author: "Thomas Brand"
-date: "2026-07-05"
+date: "2026-07-11"
 categories: [news, code, arrow, duckdb]
-draft: true
+draft: false
 ---
 
 ```{r}
@@ -16,6 +16,10 @@ fs::file_delete("./myDuck.db")
 ```
 
 # Abstract
+
+In this bog I'll show you how you can use duckdb in R to set up an entry point to query all your parquet-files in one environment without copying the original data by creating a view to these parquet-files.
+
+This avoids the problem of finding the correct files in your storage-system. For some people it might be easier to use SQL queries to get results from your data instead of using R (dplyr, data.table etc.)
 
 # Motivation
 
@@ -118,7 +122,9 @@ But it gets difficult if you want to share all your data with another department
 
 # Solution - duckdb
 
-## What we strive for
+![](duckdb.png)
+
+## Our Goal
 
 We would like to have
 
@@ -326,6 +332,113 @@ result
 
 We can see, that it is really a VIEW we have here, so that a change in the underlying data reflects to the data base.
 
+## Add tables from another duckdb
+
+It may be the case that you already have some of your data in a duckdb-database. And, of course we would also like to access these data via our virtual database.
+
+Let's create such a database for demonstration purposes.
+
+```{r}
+#| label: example-duckdb
+
+# create a database driver
+example_drv = duckdb(dbdir = "./exampleDB.db")
+
+# get a connection to the database
+example_con = dbConnect(example_drv)
+
+# create tables 
+dbWriteTable(conn = example_con,
+             name = "iris",
+             value = iris,
+             overwrite = TRUE)
+
+dbWriteTable(conn = example_con,
+             name = "penguins",
+             value = penguins,
+             overwrite = TRUE)
+
+# close DB
+dbDisconnect(example_con)
+
+
+```
+
+To do this we have to attach our example-database
+
+```{r}
+#| label: view to other database
+
+# open database from which we create our views
+con = dbConnect(drv)
+
+# attach the example database
+dbExecute(con, "
+          ATTACH './exampleDB.db'
+          AS externalDB (TYPE duckdb)")
+
+# with this you can access the iris table
+i = dbGetQuery(con, "
+           SELECT *
+               FROM externalDB.iris")
+
+# to make it permanent we have to create a view
+dbExecute(con, "
+          CREATE VIEW e_iris
+          AS SELECT *
+          FROM externalDB.iris")
+
+dbExecute(con, "
+          CREATE VIEW e_penguins
+          AS SELECT *
+          FROM externalDB.penguins")
+
+# close database
+dbDisconnect(con)
+
+# view extracted date
+head(i)
+
+```
+
+Let's look at the tables
+
+```{r}
+#| label: check database
+
+# open database from which we created our views and attached database
+con = dbConnect(drv)
+
+# list all tables
+tab = dbListTables(con)
+
+tab
+
+```
+
+Our created views are permanet, but unfortunately not the attachment. For this you have to have attach it manually or create a function that does this for all your databases
+
+```{r}
+#| label: attach function
+
+# create attach-function
+attachFct = function(con) {
+  dbExecute(con, "
+            ATTACH './exampleDB.db'
+            AS externalDB (TYPE duckdb)")
+}
+
+attachFct(con)
+j = dbGetQuery(con, "
+               SELECT *
+               FROM e_iris")
+
+dbDisconnect(con)
+
+head(j)
+
+```
+
 # Closing Remarks
 
 The code above to create a VIEW from every parquet-file in a directory is in my opinion quite useful if you have your classification-information tables or mapping tables inside your package. These files are stored in the data-directory of your package in a csv or Rdata format.
@@ -333,3 +446,7 @@ The code above to create a VIEW from every parquet-file in a directory is in my 
 While duckdb comes with a function to read csv-files (see <https://duckdb.org/docs/current/data/csv/overview> ) I don't recommend it as csv-files are easy to read for the human eye but are difficult to interpret for the machine. Think of the different way you can write a date.
 
 So for this special purpose I recommend that you convert your Rdata files into parquet-format. This is quite easily done by inserting an R-script at the end of the R-directory of your package, that converts every Rdata-file or Rds-file of the data-directory of your package into parquet-format. You will end up with two formats of the same data in your data-directory - one Rdata and one parquet of each data-file.
+
+::: callout-note
+To avoid naming conflicts I would add a prefix of the package-name for the table names, i.e. \<package-name\>.<table-name>
+:::
